@@ -43,6 +43,14 @@
         .upload-area input {
             display: none;
         }
+        .image-wrapper {
+          position: relative;
+          display: inline-block;
+        }
+        .image-wrapper img {
+          display: block;
+          width: 100%;
+        }
         .preview {
             margin: 1rem 0 0.5rem 0;
         }
@@ -81,6 +89,22 @@
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
+        .depth-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          overflow: hidden;
+          width: 100%;
+          height: 100%;
+          mask-image: linear-gradient(to right, black 50%, transparent 50%);
+          -webkit-mask-image: linear-gradient(to right, black 50%, transparent 50%);
+        }
+        .depth-overlay img {
+          width: 100%;
+          height: 100%;
+          display: block;
+
+        }
         .spinner {
             margin: 2rem auto 0 auto;
             border: 4px solid #f3f3f3;
@@ -108,12 +132,14 @@
             <input type="file" id="imageInput" accept="image/*" />
         </div>
         <div class="preview" id="preview"></div>
+        <div class="slider" id="slider"></div>
         <button class="btn" id="uploadBtn" disabled>Get Depth Map</button>
         <div id="spinner" class="spinner" style="display:none;"></div>
         <div class="error" id="errorMsg"></div>
         <div class="result" id="result"></div>
     </div>
     <script>
+        const API_URL = "https://4050-2406-5900-1079-4096-c463-7ce7-4187-dde.ngrok-free.app";
         const uploadArea = document.getElementById('uploadArea');
         const imageInput = document.getElementById('imageInput');
         const preview = document.getElementById('preview');
@@ -121,6 +147,7 @@
         const spinner = document.getElementById('spinner');
         const resultDiv = document.getElementById('result');
         const errorMsg = document.getElementById('errorMsg');
+        const slider = document.getElementById('slider');
         let selectedFile = null;
         let previewUrl = null;
 
@@ -148,7 +175,11 @@
                 selectedFile = imageInput.files[0];
                 if (previewUrl) URL.revokeObjectURL(previewUrl);
                 previewUrl = URL.createObjectURL(selectedFile);
-                preview.innerHTML = `<img src="${previewUrl}" alt="Preview" />`;
+                preview.innerHTML = `
+                  <div class="image-wrapper">
+                    <img src="${previewUrl}" alt="Preview" />
+                  </div>
+                  `;
                 uploadBtn.disabled = false;
             } else {
                 preview.innerHTML = '';
@@ -165,13 +196,15 @@
             const formData = new FormData();
             formData.append('file', selectedFile);
 
-            const response = await fetch('https://4050-2406-5900-1079-4096-c463-7ce7-4187-dde.ngrok-free.app/upload/', {
+            const response = await fetch(`${API_URL}/upload/`, {
                 method: 'POST',
                 body: formData
             }).then(async response => {
-                const data = await response.blob()
-                    .then(blob => {
-                        const imageUrl = URL.createObjectURL(blob);
+                const data = await response.json()
+                    .then(jsonData => {
+                        const depthMapUrl = `data:image/png;base64,${jsonData.depth_map}`
+                        const depthPlotUrl = `data:image/png;base64,${jsonData.depth_plot}`
+                        // const imageUrl = URL.createObjectURL(blob);
                         spinner.style.display = 'none';
                         uploadBtn.disabled = false;
                         resultDiv.innerHTML = `
@@ -181,9 +214,27 @@
                                 </div>
                                 <div>
                                     <div style='font-size:0.95em;color:#888;margin-bottom:0.3em;'>Depth Map</div>
-                                    <img id="depthImage" src="${imageUrl}" alt="Depth Map" />
+                                    <img id="depthImage" src="${depthPlotUrl}" alt="Depth Map" />
                                 </div>
                             `;
+                        preview.innerHTML = `
+                          <div class="image-wrapper">
+                            <img src="${previewUrl}" alt="Preview" />
+                            <div class="depth-overlay" id="depthOverlay">
+                              <img src="${depthMapUrl}">
+                            </div>
+                          </div>
+                          `
+                        slider.innerHTML = `
+                          <input type="range" min="0" max="100" value="50" class="slider" id="xraySlider"/>
+                        `
+                        
+                        const overlay = document.getElementById("depthOverlay");
+                        const xraySlider = document.getElementById("xraySlider");
+                        xraySlider.addEventListener("input", () => {
+                          overlay.style.maskImage = `linear-gradient(to right, black ${xraySlider.value}%, transparent ${xraySlider.value}%)`;
+                          overlay.style.webkitMaskImage = `linear-gradient(to right, black ${xraySlider.value}%, transparent ${xraySlider.value}%)`;
+                        });
                     }).catch(e => {
                         console.error(e);
                         errorMsg.textContent = 'Error processing image.'
