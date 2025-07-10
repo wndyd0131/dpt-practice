@@ -5,7 +5,7 @@
 
 from io import BytesIO
 
-import torch.functional as F
+import torch.nn.functional as F
 import torch
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -21,7 +21,8 @@ class DPTModelRunner:
             shift=0.0,
             invert=False
         )
-        self.device = torch.device('cpu')
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print(self.device)
 
     def predict(self, x):
         # preprocessing
@@ -36,7 +37,7 @@ class DPTModelRunner:
         ])
 
         image = transform(image).unsqueeze(0)
-
+        
         model = self.model.to(self.device)
 
         checkpoint = torch.load("../checkpoint/dpt_checkpoint_epoch.pth", map_location=self.device)
@@ -44,6 +45,7 @@ class DPTModelRunner:
 
         model.eval()
         with torch.no_grad():
+            image = image.to(self.device)
             output = model(image)
             # postprocessing
             if output.dim() == 3:
@@ -54,12 +56,10 @@ class DPTModelRunner:
         return pred
 
     def createDepthFile(self, pred):
-        depth_map = pred.numpy()  # convert from tensor to numpy to use image processing libraries
+        depth_map = pred.cpu().numpy()  # convert from tensor to numpy to use image processing libraries
         # depth_map = (depth_map - depth_map.min()) / (depth_map.max() - depth_map.min())
         # depth_map = (depth_map * 255).astype(np.uint8)
-
-        print(f"Shape {depth_map.shape}")
-        print(f"Squeezed {depth_map.squeeze(0)}")
+        
         depth_map = depth_map.squeeze(0)
         # depth_image = Image.fromarray(depth_map)
         # depth_image.save('./1_depth.jpg')
