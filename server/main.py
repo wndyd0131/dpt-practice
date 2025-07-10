@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi.responses import JSONResponse
 import base64
-from server.dptUtil import DPTModelRunner
+from dptUtil import DPTModelRunner
 from PIL import Image
 
 app = FastAPI()

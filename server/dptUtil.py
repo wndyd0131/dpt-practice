@@ -10,7 +10,7 @@ import torch
 import matplotlib.pyplot as plt
 from PIL import Image
 from torchvision import transforms
-from server.dpt.models import DPTDepthModel
+from dpt.models import DPTDepthModel
 
 class DPTModelRunner:
     def __init__(self):
