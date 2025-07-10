@@ -139,7 +139,7 @@
         <div class="result" id="result"></div>
     </div>
     <script>
-        const API_URL = "https://6124-2406-5900-1079-4096-c463-7ce7-4187-dde.ngrok-free.app";
+        const API_URL = "http://localhost:8080";
         const uploadArea = document.getElementById('uploadArea');
         const imageInput = document.getElementById('imageInput');
         const preview = document.getElementById('preview');
@@ -228,7 +228,7 @@
                         slider.innerHTML = `
                           <input type="range" min="0" max="100" value="50" class="slider" id="xraySlider"/>
                         `
-                        
+
                         const overlay = document.getElementById("depthOverlay");
                         const xraySlider = document.getElementById("xraySlider");
                         xraySlider.addEventListener("input", () => {
